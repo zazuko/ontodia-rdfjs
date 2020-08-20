@@ -5,6 +5,7 @@
     "strict": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
-    "noImplicitThis": true
+    "noImplicitThis": true,
+    "moduleResolution": "Node"
   }
 }

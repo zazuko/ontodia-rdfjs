@@ -10,7 +10,9 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@tpluscode/rdf-ns-builders": "^0.3.7",
     "@zazuko/ontodia-rdfjs-provider": "*",
+    "@zazuko/rdf-vocabularies": "^2020.8.17",
     "ontodia": "^0.12.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"

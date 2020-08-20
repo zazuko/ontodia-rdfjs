@@ -1,18 +1,25 @@
 import {Workspace, WorkspaceProps} from 'ontodia';
-import {RdfjsProvider} from '../../rdfjs-provider';
+import {RdfjsProvider} from '@zazuko/ontodia-rdfjs-provider';
 import { ClassAttributes } from 'react';
+import { vocabularies } from '@zazuko/rdf-vocabularies'
+import * as ns from '@tpluscode/rdf-ns-builders';
 
-function onWorkspaceMounted(workspace: Workspace) {
+async function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) {
         return;
     }
 
-    const dataProvider = new RdfjsProvider();
-
+    const { schema } = await vocabularies({ only: ['schema'] })
+    const dataProvider = new RdfjsProvider({
+        data: schema,
+        rootClass: ns.schema.Thing,
+    });
 
     workspace.getModel().importLayout({
         dataProvider,
     });
 }
 
-export const workspaceProps: WorkspaceProps & ClassAttributes<Workspace> = {}
+export const workspaceProps: WorkspaceProps & ClassAttributes<Workspace> = {
+    ref: onWorkspaceMounted
+}
