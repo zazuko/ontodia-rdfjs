@@ -8,6 +8,9 @@ module.exports = merge(
         input: path.resolve(__dirname, './index.html'),
     }),
     {
+        output: {
+            path: path.resolve(__dirname, '../../dist'),
+        },
         plugins: [
             new MomentLocalesPlugin({
                 localesToKeep: ['en'],
