@@ -1,43 +1,39 @@
 const path = require('path');
+const { merge } = require('webpack-merge')
+const { createDefaultConfig } = require('@open-wc/building-webpack')
 const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
-module.exports = {
-    mode: 'development',
-    entry: './src/index.ts',
-    plugins: [
-        new MomentLocalesPlugin({
-            localesToKeep: ['en'],
-        }),
-    ],
-    resolve: {
-        extensions: ['.ts', '.tsx', '.js'],
-    },
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'demo.js',
-    },
-    module: {
-        rules: [
-            {
-                test: /\.ts$|\.tsx$/,
-                loader: 'ts-loader',
-                options: { allowTsInNodeModules: true },
-            },
-            /*{
-                test: /\.css$/,
-                use: ['style-loader', 'css-loader'],
-            },*/
-            {
-                test: /\.(jpe?g|gif|png|svg)$/i,
-                use: [
-                    {
-                        loader: 'url-loader',
-                        options: {
-                            limit: 8192,
-                        },
-                    },
-                ],
-            },
+module.exports = merge(
+    createDefaultConfig({
+        input: path.resolve(__dirname, './index.html'),
+    }),
+    {
+        plugins: [
+            new MomentLocalesPlugin({
+                localesToKeep: ['en'],
+            }),
         ],
-    },
-};
+        resolve: {
+            extensions: ['.ts', '.tsx', '.mjs', '.js', '.json'],
+            alias: {
+                stream: 'readable-stream',
+            },
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.nq$/,
+                    use: ['raw-loader'],
+                },
+                {
+                    test: /\.ttl$/,
+                    use: ['raw-loader'],
+                },
+
+            ],
+        },
+        node: {
+            crypto: true,
+        },
+    })
+
