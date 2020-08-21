@@ -1,9 +1,10 @@
 import type * as O from 'ontodia'
-import {rdf, rdfs, schema} from '@tpluscode/rdf-ns-builders';
-import {BlankNode, DatasetCore, Literal, NamedNode, Quad} from 'rdf-js';
+import {rdf, rdfs} from '@tpluscode/rdf-ns-builders';
+import {BlankNode, DatasetCore, Literal, NamedNode, Quad, Term} from 'rdf-js';
 import TermSet from '@rdf-esm/term-set'
+import TermMap from '@rdf-esm/term-map'
 import $rdf from 'rdf-ext'
-import clownface, {AnyContext, AnyPointer, GraphPointer, MultiPointer} from 'clownface'
+import clownface, { AnyContext, AnyPointer, GraphPointer } from 'clownface'
 import DatasetExt from 'rdf-ext/lib/Dataset';
 
 function toLanguage(pointer: GraphPointer<Literal>): O.LocalizedString {
@@ -11,6 +12,40 @@ function toLanguage(pointer: GraphPointer<Literal>): O.LocalizedString {
         value: pointer.value,
         language: pointer.term.language
     }
+}
+
+function getLabels(element: GraphPointer) {
+    return {values: element.out(rdfs.label, {language: '*'}).map(toLanguage)}
+}
+
+function getTypes(element: GraphPointer) {
+    return element.in(rdf.type).map(type => type.value as O.ElementTypeIri)
+}
+
+function getProperties(element: GraphPointer<Term, DatasetExt>) {
+    return [...element.dataset.match(element.term).toArray()
+        .reduce((map, quad) => {
+            if (!map.has(quad.predicate)) {
+                map.set(quad.predicate, [])
+            }
+            map.get(quad.predicate)!.push(quad.object)
+
+            return map
+        }, new TermMap<Term, Term[]>()).entries()]
+        .reduce<O.Dictionary<O.Property>>((props, [predicate, objects]) => {
+            props[predicate.value] = {
+                type: 'string',
+                values: objects.map(object => {
+                    return {
+                        type: 'string',
+                        value: object.value,
+                        language: object.termType === 'Literal' ? object.language : ''
+                    }
+                })
+            }
+
+            return props
+        }, {})
 }
 
 interface Options {
@@ -57,9 +92,7 @@ export class RdfjsProvider implements O.DataProvider {
 
                 return {
                     id: clas.value as O.ElementTypeIri,
-                    label: {
-                        values: clas.out(rdfs.label, {language: '*'}).map(toLanguage)
-                    },
+                    label: getLabels(clas),
                     children,
                     count: children.length,
                 };
@@ -69,8 +102,19 @@ export class RdfjsProvider implements O.DataProvider {
         return subClassesOf()
     }
 
-    async elementInfo(params: { elementIds: O.ElementIri[] }): Promise<O.Dictionary<O.ElementModel>> {
-        return {};
+    async elementInfo({elementIds}: { elementIds: O.ElementIri[] }): Promise<O.Dictionary<O.ElementModel>> {
+        const els = this._pointer.namedNode(elementIds).toArray()
+
+        return els.reduce<O.Dictionary<O.ElementModel>>((dict, element) => {
+            dict[element.value] = {
+                id: element.value as O.ElementIri,
+                label: getLabels(element),
+                types: getTypes(element),
+                properties: getProperties(element)
+            }
+
+            return dict
+        }, {})
     }
 
     async filter(params: O.FilterParams): Promise<O.Dictionary<O.ElementModel>> {
